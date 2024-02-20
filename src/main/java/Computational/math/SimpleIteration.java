@@ -5,6 +5,8 @@ import Computational.math.Exceptions.DiagonalPredominanceException;
 public class SimpleIteration {
     private Double[][] system;
     private Double[] answers;
+    private Double[][] norm;
+    private Double[] startApproach;
 
     public SimpleIteration(Double[][] system,Double[] answers) {
         this.system = system;
@@ -48,17 +50,20 @@ public class SimpleIteration {
         this.system[positionTo] = this.system[positionFrom];
         this.system[positionFrom] = tmpSystemRow;
     }
-    public void printSystemAndAnswers(){
-        if(isDiagonalPredominances()){
-            System.out.println("SYSTEM IS WORKING!!");
-        }else
-            System.out.println("Данная система не имеет преобладании в диагоналях");
-
-        for (int i = 0; i < this.system.length; i++) {
-            for (int j = 0; j < this.system[i].length; j++) {
-                System.out.print(this.system[i][j] + "  ");
+    public void printSystemAndAnswers(Double[][] arrayToPrint,Double[] answers){
+        for (int i = 0; i < arrayToPrint.length; i++) {
+            for (int j = 0; j < arrayToPrint[i].length; j++) {
+                System.out.print(arrayToPrint[i][j] + "  ");
             }
-            System.out.println("|  " + this.answers[i]);
+            System.out.println("|  " + answers[i]);
+        }
+    }
+    public void printSystem(Double[][] arrayToPrint){
+        for (int i = 0; i < arrayToPrint.length; i++) {
+            for (int j = 0; j < arrayToPrint[i].length; j++) {
+                System.out.print(arrayToPrint[i][j] + "  ");
+            }
+            System.out.println();
         }
     }
     public boolean isDiagonalPredominances() {
@@ -81,4 +86,42 @@ public class SimpleIteration {
         }
         return true;
     }
+
+    public void divideByDiagonalCoefficient(){
+        if(!isDiagonalPredominances()){
+            return;
+        }
+        for (int i = 0; i < system.length; i++) {
+            double divider = system[i][i];
+            answers[i] = answers[i]/divider;
+            for (int j = 0; j < system[0].length; j++) {
+                system[i][j] = system[i][j]/divider;
+            }
+        }
+    }
+    public void expressCoefficient(){
+        int dimension = system.length;
+        this.norm = new Double[dimension][dimension];
+        this.startApproach = answers;
+        for (int i = 0; i < dimension; i++) {
+            for(int j = 0; j < dimension; j++) {
+                norm[i][j] = i != j ? -system[i][j] : 0d;
+            }
+        }
+    printSystemAndAnswers(norm,startApproach);
+    }
+    public boolean convergenceCondition(){
+        double sum = 0;
+        for (Double[] row : norm) {
+            for (int j = 0; j < norm.length; j++) {
+                sum += row[j];
+            }
+            if (sum >= 1) {
+                return false;
+            }
+            sum = 0;
+        }
+        return true;
+    }
+
 }
