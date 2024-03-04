@@ -6,51 +6,28 @@ import Computational.math.utils.UtilsForSimpleIteration;
 import static java.lang.System.exit;
 
 public class SimpleIteration {
-    private Double[][] system;
-    private Double[] answers;
+    private final Double[][] system;
+    private final Double[] answers;
     private Double[][] norm;
     private Double[] startApproach;
     private Double[] lastApproach;
     private final double accuracy;
     //FIXME придумать бы другую затычку для этого
     private double absoluteDeviations = 111;
+    private static int iterationNumber = 0;
 
     public SimpleIteration(Double[][] system, Double[] answers, double accuracy) {
         this.system = system;
         this.answers = answers;
         this.accuracy = accuracy;
     }
-
-    /**
-     * Приводит систему к условиям преобладания диагоналей или сообщает, что их нет
-     *
-     * @throws DiagonalPredominanceException если невозможно привести данную систему к условиям преобладания диагоналей
-     */
-    public void toDiagonalPredominance() throws DiagonalPredominanceException {
-        int middleArray = getMiddleArray();
-        for (int i = 0; i < system.length; i++) {
-            for (int j = 0; j < system.length; j++) {
-                swapRows(j, i);
-                if (isDiagonalPredominances()) {
-                    return;
-                }
-            }
-            //FIXME временно 1-далее середина массива проблема есть здесь system.length - 1
-//            if(i != 0) {
-            swapRows(middleArray, system.length - 1);
-//            }
-            if (isDiagonalPredominances()) {
-                return;
-            }
-        }
-        throw new DiagonalPredominanceException("Невозможно выполнить условие преобладания");
-    }
-
     public int getMiddleArray() {
         //TODO возможно необходимо сменить логику нахождения середины массива
-        return system.length % 2 == 0 ? system.length / 2 : system.length / 2;
+//        return system.length % 2 == 0 ? system.length / 2 : system.length / 2;
+        return system.length / 2;
     }
 
+    //TODO: стоит переделать, а точнее сделать его частью другой функции, которая будет перебирать систему
     public void swapRows(int positionFrom, int positionTo) {
         Double[] tmpSystemRow = this.system[positionTo];
         Double tmpAnswer = this.answers[positionTo];
@@ -59,20 +36,52 @@ public class SimpleIteration {
         this.system[positionTo] = this.system[positionFrom];
         this.system[positionFrom] = tmpSystemRow;
     }
-
-    public void printSystem(Double[][] arrayToPrint) {
-        for (int i = 0; i < arrayToPrint.length; i++) {
-            for (int j = 0; j < arrayToPrint[i].length; j++) {
-                System.out.print(arrayToPrint[i][j] + "  ");
+    /**
+     * Приводит систему к условиям преобладания диагоналей или сообщает, что их нет
+     * @throws DiagonalPredominanceException если невозможно привести данную систему к условиям преобладания диагоналей
+     */
+    public void toDiagonalPredominance() throws DiagonalPredominanceException {
+        Double[][] matrix = system;
+        int rows = system.length;
+        int cols = system[0].length;
+        for (int i = 0; i < rows; i++) {
+            double max = matrix[i][0];
+            int maxIndex = 0;
+            for (int j = 1; j < cols; j++) {
+                if (matrix[i][j] > max) {
+                    max = matrix[i][j];
+                    maxIndex = j;
+                }
             }
-            System.out.println();
+            if (maxIndex != i) {
+                swapRows(maxIndex,i);
+            }
         }
+        for (Double[] i : matrix){
+            System.out.println();
+            for(Double j : i){
+                System.out.print(j + " ");
+            }
+        }
+        if(!isDiagonalPredominances()){
+            throw new DiagonalPredominanceException("Невозможно привести систему к преобладанию диагональных элементов");
+        }
+
     }
+
 
     public boolean isDiagonalPredominances() {
         int dimension = this.system.length;
         double diagonal = 0;
         double notDiagonalSumAbs = 0;
+//        System.out.print("Перебор вариантиков: ");
+//        for (Double[] i : system){
+//            System.out.println("-----");
+//            for (Double j: i){
+//                System.out.print(j + " ");
+//            }
+//        }
+//        System.out.println("-------------------");
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
                 if (i == j) {
@@ -116,16 +125,6 @@ public class SimpleIteration {
                 norm[i][j] = i != j ? -system[i][j] : 0d;
             }
         }
-
-    }
-
-    public void printSystemAndAnswers(Double[][] arrayToPrint, Double[] answers) {
-        for (int i = 0; i < arrayToPrint.length; i++) {
-            for (int j = 0; j < arrayToPrint[i].length; j++) {
-                System.out.print(arrayToPrint[i][j] + "  ");
-            }
-            System.out.println("|  " + answers[i]);
-        }
     }
 
     /**
@@ -147,39 +146,76 @@ public class SimpleIteration {
         return true;
     }
 
+    public Double[] countNewApproach(Double[] approachToCount) {
+        Double[] tmpTestRow = new Double[startApproach.length];
+        for (int currentRow = 0; currentRow < tmpTestRow.length; currentRow++) {
+            tmpTestRow[currentRow] = UtilsForSimpleIteration.roundDouble(approximationRow(currentRow, approachToCount));
+        }
+        return tmpTestRow;
+    }
 
     /**
      * приближение
      */
+    @Deprecated
     public void approximations() {
-        Double[] tmpTestRow = new Double[lastApproach.length];
-        for (int currentRow = 0; currentRow < norm.length; currentRow++) {
-            tmpTestRow[currentRow] = UtilsForSimpleIteration.roundDouble(approximationRow(currentRow));
+        //аналог tmpApproach
+        Double[] newApproach;
+        //TODO возможно можно заменить обычным прирваниванием lastApproach = startApproach на старте
+        if (lastApproach == null) {
+            newApproach = countNewApproach(startApproach);
+        } else {
+            newApproach = countNewApproach(lastApproach);
         }
-        if(!equalsArrays(startApproach,lastApproach)){
-            UtilsForSimpleIteration.printFinalTable(lastApproach, calculateAbsoluteDeviations(tmpTestRow, lastApproach));
-            lastApproach = tmpTestRow;
-        }
-        else{
-            UtilsForSimpleIteration.printFinalTable(lastApproach,0);
-            for (double st : startApproach){
-                System.out.println(st);
+        //FIXME проблема с тем, что отчет начинается с первого ряда открыта, как идея можно попробовать просто что-либо считать со второго, но почему-то упираюсь в index out of range
+        //вообще это вывод в таблицу, но там кривой подсчет абсолютной делимости, так как начинается не с того
+        double calculation;
+        if (lastApproach == null) {
+//            calculation = calculateAbsoluteDeviations(newApproach,startApproach);
+            calculation = 0;
+            lastApproach = startApproach;
+        } else {
+            System.out.print("last: ");
+            for (double i : lastApproach) {
+                System.out.print(i + " ");
             }
-            lastApproach = tmpTestRow;
-        }
-    }
-    public boolean equalsArrays(Double[] firstArray,Double[] secondArray){
-        for (int i = 0; i < firstArray.length; i++) {
-            if(!firstArray[i].equals(secondArray[i])){
-                return false;
+            System.out.print("\nnew one: ");
+            for (double i : newApproach) {
+                System.out.print(i + " ");
             }
+            System.out.println();
+            calculation = calculateAbsoluteDeviations(newApproach, lastApproach);
         }
-        return true;
+        UtilsForSimpleIteration.printFinalTable(lastApproach, calculation);
+        lastApproach = newApproach;
     }
+    //Version 2.0 #approximations()
+
+    /**
+     * призвана решить проблему с неправильным вычислением абсолютной делимости
+     *
+     * @see #approximations()
+     */
+    public void verApprox() {
+        Double[] newTMP;
+        newTMP = countNewApproach(this.lastApproach);
+        if (iterationNumber == 0) {
+            iterationNumber++;
+            UtilsForSimpleIteration.printFinalTable(this.lastApproach, null);
+            return;
+        }
+        double calculation = calculateAbsoluteDeviations(lastApproach, newTMP);
+        this.lastApproach = newTMP;
+        iterationNumber++;
+        UtilsForSimpleIteration.printFinalTable(lastApproach, calculation);
+
+    }
+
+
     /**
      * Функция для вычисления критерия по абсолютным отклонениям
      */
-    public double calculateAbsoluteDeviations(Double[] currentX, Double[] previousX){
+    public double calculateAbsoluteDeviations(Double[] currentX, Double[] previousX) {
         double[] tmp = new double[currentX.length];
         double max = 0d;
         for (int i = 0; i < currentX.length; i++) {
@@ -192,32 +228,38 @@ public class SimpleIteration {
 
     /**
      * Данный метод является вспомогательным для вычисления приближения
-     * todo правильно ли называть его рядом?(речь про currentRow)
-     *
      * @param currentRow номер ряда, для которого вычисляется приближение
      * @return сумма посчитанного приблежния
      * @see #approximations() основной метод
      */
-    private Double approximationRow(int currentRow) {
+    private Double approximationRow(int currentRow, Double[] approach) {
         double sumRow = 0d;
-        for (int i = 0; i < lastApproach.length; ++i) {
-            sumRow += norm[currentRow][i] * lastApproach[i];
+        for (int i = 0; i < approach.length; ++i) {
+            sumRow += norm[currentRow][i] * approach[i];
         }
         return sumRow + startApproach[currentRow];
     }
-    public void solve() throws DiagonalPredominanceException {
-        toDiagonalPredominance();
-//            simpleIteration.printSystemAndAnswers();
-        divideByDiagonalCoefficient();
-        expressCoefficient();
-        //^ последний адекватный этап
-        if(!convergenceCondition()){
-            System.out.println("ne rabotaet");
-            exit(-1);
+
+    public void solve() {
+        try {
+            toDiagonalPredominance();
+            divideByDiagonalCoefficient();
+            expressCoefficient();
+            if (!convergenceCondition()) {
+                System.err.println("Метод не сработает");
+                exit(-1);
+            }
+
+            do {
+                verApprox();
+            }
+            while (!(this.accuracy > this.absoluteDeviations));
+            iterationNumber = 0;
         }
-        do{
-            approximations();
+        catch (DiagonalPredominanceException e) {
+            System.err.println(e.getMessage());
+            iterationNumber = 0;
+
         }
-        while (!(this.accuracy > this.absoluteDeviations));
     }
 }

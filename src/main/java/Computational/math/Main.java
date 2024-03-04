@@ -14,18 +14,11 @@ public class Main {
 //                {1d,7d,10d,1d},
 //                {9d,21d,1d,1d},
 //                {9d,7d,1d,92d}
-//
 //        };
         Double[] systemAnswers = {14d,12d,13d};
         double epsilon = 0.01;
         SimpleIteration simpleIteration = new SimpleIteration(system,systemAnswers,epsilon);
-        try {
-            simpleIteration.solve();
-
-
-        } catch (DiagonalPredominanceException e) {
-            System.out.println(e.getMessage());
-        }
+        simpleIteration.solve();
     }
 
 
