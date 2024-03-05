@@ -1,26 +1,92 @@
 package Computational.math;
 
-import Computational.math.Exceptions.DiagonalPredominanceException;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        Double[][] system = {
-                {2d, 2d, 10d},
-                {10d, 1d, 1d},
-                {2d, 10d, 1d}
-        };
-//        Double system[][] = {
-//                {10d,2d,2d,2d},
-//                {1d,7d,10d,1d},
-//                {9d,21d,1d,1d},
-//                {9d,7d,1d,92d}
-//        };
-        Double[] systemAnswers = {14d,12d,13d};
-        double epsilon = 0.01;
-        SimpleIteration simpleIteration = new SimpleIteration(system,systemAnswers,epsilon);
-        simpleIteration.solve();
+    public static void main(String[] args)  {
+        Double[][] system;
+        Double[] systemAnswers;
+        double epsilon;
+        int dimension;
+        System.out.println("Вы хотите ввести данные файлом? да/нет");
+        Scanner scanner = new Scanner(System.in);
+        String userAnswer = scanner.next();
+
+        if (userAnswer.equals("да") || userAnswer.isEmpty() || userAnswer.equals(" ")) {
+            System.out.println("Введите название файла");
+            String path = scanner.next();
+            try {
+                Scanner fileScanner = new Scanner(new File(System.getProperty("user.dir") + "/" + path));
+                dimension = fileScanner.nextInt();
+                system = readMatrixFromFile(fileScanner, dimension);
+                systemAnswers = readAnswersFromFile(dimension, fileScanner);
+                epsilon = Double.parseDouble(fileScanner.next().replace(",", "."));
+                fileScanner.close();
+
+                SimpleIteration simpleIteration = new SimpleIteration(system, systemAnswers, epsilon);
+                simpleIteration.solve();
+            }catch (FileNotFoundException e){
+                System.err.println("Ошибка при работе с файлом: " + e.getMessage());
+            }
+        } else if (userAnswer.equals("нет")) {
+                dimension = scanner.nextInt();
+                System.out.println("Введите матрицу:");
+                system = readMatrixFromKeyboard(dimension, scanner);
+                System.out.println("Введите вектор ответов:");
+                systemAnswers = readAnswers(dimension, scanner);
+                System.out.println("Введите значение epsilon:");
+                epsilon = Double.parseDouble(scanner.next().replace(",","."));
+                SimpleIteration simpleIteration = new SimpleIteration(system, systemAnswers, epsilon);
+                simpleIteration.solve();
+        } else {
+            System.err.println("Ошибка: неверный ввод.");
+            scanner.close();
+            System.exit(-1);
+        }
     }
 
 
+
+    public static Double[][] readMatrixFromKeyboard(int rows, Scanner scanner) {
+        System.out.println("Введите матрицу:");
+        Double[][] matrix = new Double[rows][rows];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < rows; j++) {
+                matrix[i][j] = scanner.nextDouble();
+            }
+        }
+        return matrix;
+    }
+
+    public static Double[] readAnswers(int size, Scanner scanner) {
+        System.out.println("Введите вектор ответов:");
+        Double[] vector = new Double[size];
+        for (int i = 0; i < size; i++) {
+            vector[i] = scanner.nextDouble();
+        }
+        return vector;
+    }
+
+
+    public static Double[][] readMatrixFromFile(Scanner fileScanner, int dimension)  {
+        Double[][] matrix = new Double[dimension][dimension];
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
+                matrix[i][j] = fileScanner.nextDouble();
+            }
+        }
+        return matrix;
+    }
+
+    public static Double[] readAnswersFromFile(int size, Scanner fileScanner) {
+
+        Double[] vector = new Double[size];
+        for (int i = 0; i < size; i++) {
+            vector[i] = fileScanner.nextDouble();
+        }
+        return vector;
+    }
 
 }

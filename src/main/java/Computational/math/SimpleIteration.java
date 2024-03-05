@@ -13,7 +13,15 @@ public class SimpleIteration {
     private Double[] lastApproach;
     private final double accuracy;
     //FIXME придумать бы другую затычку для этого
-    private double absoluteDeviations = 111;
+    private double absoluteDeviations = 1;
+
+    private static int MAX_ITERATION = 10000;
+
+
+    public static int getIterationNumber() {
+        return iterationNumber - 1;
+    }
+
     private static int iterationNumber = 0;
 
     public SimpleIteration(Double[][] system, Double[] answers, double accuracy) {
@@ -21,13 +29,7 @@ public class SimpleIteration {
         this.answers = answers;
         this.accuracy = accuracy;
     }
-    public int getMiddleArray() {
-        //TODO возможно необходимо сменить логику нахождения середины массива
-//        return system.length % 2 == 0 ? system.length / 2 : system.length / 2;
-        return system.length / 2;
-    }
 
-    //TODO: стоит переделать, а точнее сделать его частью другой функции, которая будет перебирать систему
     public void swapRows(int positionFrom, int positionTo) {
         Double[] tmpSystemRow = this.system[positionTo];
         Double tmpAnswer = this.answers[positionTo];
@@ -48,19 +50,13 @@ public class SimpleIteration {
             double max = matrix[i][0];
             int maxIndex = 0;
             for (int j = 1; j < cols; j++) {
-                if (matrix[i][j] > max) {
+                if (Math.abs(matrix[i][j]) > Math.abs(max)) {
                     max = matrix[i][j];
                     maxIndex = j;
                 }
             }
             if (maxIndex != i) {
                 swapRows(maxIndex,i);
-            }
-        }
-        for (Double[] i : matrix){
-            System.out.println();
-            for(Double j : i){
-                System.out.print(j + " ");
             }
         }
         if(!isDiagonalPredominances()){
@@ -74,14 +70,6 @@ public class SimpleIteration {
         int dimension = this.system.length;
         double diagonal = 0;
         double notDiagonalSumAbs = 0;
-//        System.out.print("Перебор вариантиков: ");
-//        for (Double[] i : system){
-//            System.out.println("-----");
-//            for (Double j: i){
-//                System.out.print(j + " ");
-//            }
-//        }
-//        System.out.println("-------------------");
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
                 if (i == j) {
@@ -154,49 +142,8 @@ public class SimpleIteration {
         return tmpTestRow;
     }
 
-    /**
-     * приближение
-     */
-    @Deprecated
-    public void approximations() {
-        //аналог tmpApproach
-        Double[] newApproach;
-        //TODO возможно можно заменить обычным прирваниванием lastApproach = startApproach на старте
-        if (lastApproach == null) {
-            newApproach = countNewApproach(startApproach);
-        } else {
-            newApproach = countNewApproach(lastApproach);
-        }
-        //FIXME проблема с тем, что отчет начинается с первого ряда открыта, как идея можно попробовать просто что-либо считать со второго, но почему-то упираюсь в index out of range
-        //вообще это вывод в таблицу, но там кривой подсчет абсолютной делимости, так как начинается не с того
-        double calculation;
-        if (lastApproach == null) {
-//            calculation = calculateAbsoluteDeviations(newApproach,startApproach);
-            calculation = 0;
-            lastApproach = startApproach;
-        } else {
-            System.out.print("last: ");
-            for (double i : lastApproach) {
-                System.out.print(i + " ");
-            }
-            System.out.print("\nnew one: ");
-            for (double i : newApproach) {
-                System.out.print(i + " ");
-            }
-            System.out.println();
-            calculation = calculateAbsoluteDeviations(newApproach, lastApproach);
-        }
-        UtilsForSimpleIteration.printFinalTable(lastApproach, calculation);
-        lastApproach = newApproach;
-    }
-    //Version 2.0 #approximations()
 
-    /**
-     * призвана решить проблему с неправильным вычислением абсолютной делимости
-     *
-     * @see #approximations()
-     */
-    public void verApprox() {
+    public void approximations() {
         Double[] newTMP;
         newTMP = countNewApproach(this.lastApproach);
         if (iterationNumber == 0) {
@@ -208,7 +155,6 @@ public class SimpleIteration {
         this.lastApproach = newTMP;
         iterationNumber++;
         UtilsForSimpleIteration.printFinalTable(lastApproach, calculation);
-
     }
 
 
@@ -246,15 +192,16 @@ public class SimpleIteration {
             divideByDiagonalCoefficient();
             expressCoefficient();
             if (!convergenceCondition()) {
-                System.err.println("Метод не сработает");
+                System.err.println("Условие сходимости не выполняется");
                 exit(-1);
             }
-
             do {
-                verApprox();
+                approximations();
+                MAX_ITERATION--;
             }
-            while (!(this.accuracy > this.absoluteDeviations));
+            while (!(this.accuracy > this.absoluteDeviations) || MAX_ITERATION == 0);
             iterationNumber = 0;
+            MAX_ITERATION = 10000;
         }
         catch (DiagonalPredominanceException e) {
             System.err.println(e.getMessage());
